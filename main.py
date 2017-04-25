@@ -19,11 +19,6 @@ class Handler(webapp2.RequestHandler):
     def render(self, template, **kw):
         self.write(self.render_str(template, **kw))
 
-class ViewPostHandler(webapp2.RequestHandler):
-    def get(self, id):
-        post = Model.get_by_id
-        self.response.write(post)
-
 class Blog(db.Model):
     title = db.StringProperty(required = True)
     blog = db.TextProperty(required = True)
@@ -32,7 +27,7 @@ class Blog(db.Model):
 class MainPage(Handler):
     def render_base(self):
         blogs = db.GqlQuery("SELECT * FROM Blog "
-                            "ORDER BY created DESC ")
+                            "ORDER BY created DESC LIMIT 5 ")
         self.render("frontpage.html", blogs=blogs)
 
     def get(self):
@@ -52,10 +47,17 @@ class NewPost(Handler):
         if title and blog:
             a = Blog(title = title, blog = blog)
             a.put()
-            self.redirect("/blog")
+            linkz = str(a.key().id())
+            self.redirect("/blog/" + linkz)
         else:
             error = "We need both the title and blogpost!"
             self.render_front(title, blog, error)
+
+class ViewPostHandler(Handler):
+    def get(self, id):
+        id = int(id)
+        post = Blog.get_by_id(id)
+        self.render("viewpost.html", post=post, id=id)
 
 app = webapp2.WSGIApplication([
     ('/', MainPage),
